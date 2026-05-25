@@ -265,8 +265,6 @@ npm i -g vercel
 vercel
 ```
 
-Jangan lupa tambahkan semua variabel dari `.env.local` ke **Environment Variables** di dashboard Vercel
-
 ## ✨ Why KodeLaci?
 
 - Built with Next.js App Router Fullstack Architecture
