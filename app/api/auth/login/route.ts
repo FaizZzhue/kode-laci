@@ -22,7 +22,7 @@ export async function POST(req: Request) {
         const {email, password} = validation.data;
         const {data: user, error} = await supabase
             .from("users")
-            .select("*")
+            .select("id, username, email, password_hash, avatar_url, created_at")
             .eq("email", email)
             .single();
         
@@ -47,13 +47,11 @@ export async function POST(req: Request) {
             email: user.email,
         });
 
-        const {password_hash, ...safeUser} = user;
-
         return NextResponse.json(
             {
                 message: "Login berhasil",
                 token,
-                user: safeUser,
+                user,
             },
             {status: 200}
         );

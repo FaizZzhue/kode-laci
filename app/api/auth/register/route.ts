@@ -42,7 +42,7 @@ export async function POST(req: Request) {
                 email,
                 password_hash: passwordHash,
             })
-            .select()
+            .select("id, username, email, avatar_url, created_at")
             .single();
         if (error) {
             throw error;
@@ -53,27 +53,20 @@ export async function POST(req: Request) {
             email: user.email,
         });
 
-        const safeUser = {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            avatar_url: user.avatar_url,
-            created_at: user.created_at,
-        };
-
         return NextResponse.json(
             {
                 message: "Register success",
                 token,
-                user: safeUser,
+                user,
             },
             {status: 201}
         );
     } catch (error) {
+        console.log(error);
+        
         return NextResponse.json (
             {
                 message: "Internal Server Error",
-                error,
             },
             {status: 500}
         );
