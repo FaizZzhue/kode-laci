@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import bcrypt from "bcryptjs";
 import { registerSchema } from "@/lib/validations";
 import { signToken } from "@/lib/auth";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
         const parsed = registerSchema.safeParse(body);
@@ -22,16 +22,23 @@ export async function POST(req: Request) {
         const { username, email, password } = parsed.data;
         const { data: existingUser } = await supabase
             .from("users")
-            .select("id")
-            .eq("email", email)
-            .single();
+            .select("email, username")
+            .or(`email.eq.${email},username.eq.${username}`)
+            .maybeSingle();
         if (existingUser) {
-            return NextResponse.json (
-                {
-                    message: "Email already registered",
-                },
-                {status: 409}
-            );
+            if (existingUser.email === email) {
+                return NextResponse.json(
+                    { message: "Email already registered" },
+                    { status: 409 }
+                );
+            }
+
+            if (existingUser.username === username) {
+                return NextResponse.json(
+                    { message: "Username already registered" },
+                    { status: 409 }
+                );
+            }
         }
 
         const passwordHash = await bcrypt.hash(password, 10);
@@ -62,7 +69,7 @@ export async function POST(req: Request) {
             {status: 201}
         );
     } catch (error) {
-        console.log(error);
+        console.error(error);
         
         return NextResponse.json (
             {

@@ -1,6 +1,8 @@
 import { verifyToken } from "@/lib/auth";
+import { AuthPayload } from "@/types";
+import { NextRequest } from "next/server"
 
-export function authGuard(request: Request) {
+export function authGuard(request: NextRequest) {
     const authHeader = request.headers.get("Authorization");
 
     if (!authHeader?.startsWith("Bearer ")) {
@@ -10,7 +12,7 @@ export function authGuard(request: Request) {
     const token = authHeader.split(" ")[1];
 
     try {
-        return verifyToken(token);
+        return verifyToken(token) as AuthPayload;
     } catch {
         return null;
     }
