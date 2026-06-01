@@ -20,16 +20,23 @@ export async function POST(req: Request) {
         }
 
         const {email, password} = validation.data;
-        const {data: user, error} = await supabase
+        const {data: user} = await supabase
             .from("users")
             .select("id, username, email, password_hash, avatar_url, created_at")
             .eq("email", email)
-            .single();
+            .maybeSingle();
         
-        if (error || !user) {
+        if (!user) {
             return NextResponse.json(
                 {message: "Email atau password salah"},
                 {status: 401}
+            );
+        }
+
+        if (!user.password_hash) {
+            return NextResponse.json(
+                { message: "User password invalid" },
+                { status: 500 }
             );
         }
 
@@ -47,18 +54,26 @@ export async function POST(req: Request) {
             email: user.email,
         });
 
+        const safeUser = {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            avatar_url: user.avatar_url,
+            created_at: user.created_at,
+        };
+
         return NextResponse.json(
             {
                 message: "Login berhasil",
                 token,
-                user,
+                user: safeUser,
             },
             {status: 200}
         );
     } catch (error) {
         console.error(error);
         return NextResponse.json(
-            {message: "Internal server error"},
+            {message: "Terjadi kesalahan server"},
             {status: 500}
         )
     };
