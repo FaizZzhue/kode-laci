@@ -2,13 +2,11 @@ import { verifyToken } from "@/lib/auth";
 
 export function authGuard(request: Request) {
     const authHeader = request.headers.get("Authorization");
-
-    if (!authHeader?.startsWith("Bearer ")) {
+    if (!authHeader) {
         return null;
     }
 
-    const token = authHeader.split(" ")[1];
-
+    const token = authHeader.replace("Bearer ", "");
     try {
         return verifyToken(token);
     } catch {
