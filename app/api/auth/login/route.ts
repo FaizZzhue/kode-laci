@@ -4,9 +4,9 @@ import { loginSchema } from "@/lib/validations";
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 
-export async function POST(req: Request) {
+export async function POST(request: Request) {
     try {
-        const body = await req.json();
+        const body = await request.json();
         const validation = loginSchema.safeParse(body);
 
         if(!validation.success) {

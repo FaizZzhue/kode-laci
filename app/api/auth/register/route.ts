@@ -4,9 +4,9 @@ import bcrypt from "bcryptjs";
 import { registerSchema } from "@/lib/validations";
 import { signToken } from "@/lib/auth";
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
     try {
-        const body = await req.json();
+        const body = await request.json();
         const parsed = registerSchema.safeParse(body);
 
         if (!parsed.success) {
