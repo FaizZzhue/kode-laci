@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
     const {data, error} = await supabase 
         .from("snippets")
-        .select("")
+        .select("id, title, description, language, is_public, slug, created_at")
         .eq("user_id", payload.id)
         .order("created_at", {ascending: false});
     if (error) {
@@ -22,5 +22,9 @@ export async function GET(request: NextRequest) {
             {status: 500},
         );
     }
+    return NextResponse.json(
+        { snippets: data },
+        { status: 200 }
+    );
     
 }
