@@ -17,5 +17,5 @@ export const snippetSchema = z.object({
     code: z.string().min(10, "Code minimal 10 karakter"),
     language: z.string().min(2, "Language minimal 2 karakter").max(30, "Language maximal 30 karakter"),
     is_public: z.boolean(),
-    tags: z.array(z.string()).optional(),
+    // tags: z.array(z.string()).optional(),
 })
