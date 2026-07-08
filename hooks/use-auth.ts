@@ -1,3 +1,4 @@
+import { STORAGE_KEYS } from "@/constants/storage";
 import api from "@/lib/api";
 import { ApiResponse, User } from "@/types";
 import { useCallback, useEffect, useState } from "react";
@@ -8,16 +9,16 @@ export function useAuth() {
     const [isLoading, setIsLoading] = useState(true)
 
     const login = useCallback((token: string, user: User) => {
-        localStorage.setItem('token', token)
-        localStorage.setItem('user', JSON.stringify(user))
+        localStorage.setItem(STORAGE_KEYS.TOKEN, token)
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user))
 
         setToken(token)
         setUser(user)
     }, [])
 
     const logout = useCallback(() => {
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
+        localStorage.removeItem(STORAGE_KEYS.TOKEN)
+        localStorage.removeItem(STORAGE_KEYS.USER)
 
         setToken(null)
         setUser(null)
@@ -28,7 +29,7 @@ export function useAuth() {
     useEffect(() => {
         const initializeAuth = async () => {
             try {
-                const storedToken = localStorage.getItem('token')
+                const storedToken = localStorage.getItem(STORAGE_KEYS.TOKEN)
 
                 if (!storedToken) {
                     setIsLoading(false)

@@ -1,4 +1,8 @@
+import { STORAGE_KEYS } from '@/constants/storage'
 import axios from 'axios'
+
+const token = localStorage.getItem(STORAGE_KEYS.TOKEN)
+let isRedirecting = false
 
 const api = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -25,10 +29,12 @@ api.interceptors.request.use(
 // Handle global error, khususnya token yang sudah tidak valid.
 api.interceptors.response.use(
     (response) => response,
-    (error) => {
-        if (typeof window !== 'undefined' && error.response?.status === 401) {
-            localStorage.removeItem('token')
-            localStorage.removeItem('user')
+    (error) => {        
+        if (typeof window !== 'undefined' && error.response?.status === 401 && !isRedirecting) {
+            isRedirecting = true
+
+            localStorage.removeItem(STORAGE_KEYS.TOKEN)
+            localStorage.removeItem(STORAGE_KEYS.USER)
 
             window.location.href = '/login'
         }
