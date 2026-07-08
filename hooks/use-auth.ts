@@ -2,7 +2,6 @@ import api from "@/lib/api";
 import { ApiResponse, User } from "@/types";
 import { useCallback, useEffect, useState } from "react";
 
-
 export function useAuth() {
     const [user, setUser] = useState<User | null>(null)
     const [token, setToken] = useState<string | null>(null)
