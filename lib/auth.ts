@@ -1,4 +1,4 @@
-import jwt, { SignOptions } from "jsonwebtoken";
+import jwt, { type SignOptions } from "jsonwebtoken";
 import type { AuthPayload } from "@/types";
 
 export const AUTH_COOKIE_NAME = "kodelaci_token";

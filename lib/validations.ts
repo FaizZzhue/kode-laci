@@ -2,6 +2,12 @@ import { z } from "zod";
 
 export const uuidSchema = z.string().uuid("ID tidak valid");
 
+const emailSchema = z
+    .string()
+    .trim()
+    .toLowerCase()
+    .pipe(z.email("Format email tidak valid"));
+
 export const registerSchema = z.object({
     username: z
         .string()
@@ -9,12 +15,12 @@ export const registerSchema = z.object({
         .min(3, "Username minimal 3 karakter")
         .max(30, "Username maksimal 30 karakter")
         .regex(/^[a-zA-Z0-9_-]+$/, "Username hanya boleh berisi huruf, angka, underscore, atau hyphen"),
-    email: z.email("Format email tidak valid").trim().toLowerCase(),
+    email: emailSchema,
     password: z.string().min(8, "Password minimal 8 karakter"),
 });
 
 export const loginSchema = z.object({
-    email: z.email("Format email tidak valid").trim().toLowerCase(),
+    email: emailSchema,
     password: z.string().min(8, "Password minimal 8 karakter"),
 });
 
