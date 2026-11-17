@@ -1,8 +1,10 @@
+import { NextRequest } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { authGuard } from "@/middleware/auth-guard";
-import { generateUniqueSlug } from "@/lib/utils";
-import { snippetSchema } from "@/lib/validations";
-import { NextRequest, NextResponse } from "next/server";
+import { generateUniqueSlug } from "@/lib/slug";
+import { snippetSchema, uuidSchema } from "@/lib/validations";
+import { errorResponse, okResponse } from "@/lib/api-response";
+import { getTagsBySnippetIds, syncSnippetTags } from "@/lib/snippet-tags";
 
 interface RouteParams {
     params: Promise<{
@@ -12,162 +14,159 @@ interface RouteParams {
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
     const payload = authGuard(request);
-
     if (!payload) {
-        return NextResponse.json(
-            { error: "Unauthorized" },
-            { status: 401 }
-        );
+        return errorResponse("Unauthorized", 401);
     }
 
     const { id } = await params;
+    if (!uuidSchema.safeParse(id).success) {
+        return errorResponse("Invalid snippet ID", 400);
+    }
 
     const { data, error } = await supabase
         .from("snippets")
-        .select("*")
+        .select("id, user_id, forked_from, title, description, code, language, is_public, slug, created_at, updated_at")
         .eq("id", id)
         .eq("user_id", payload.id)
         .maybeSingle();
 
     if (error) {
-        return NextResponse.json(
-            { error: error.message },
-            { status: 500 }
-        );
+        console.error("Fetch snippet detail failed:", error);
+        return errorResponse("Failed to fetch snippet", 500);
     }
 
     if (!data) {
-        return NextResponse.json(
-            { error: "Snippet not found" },
-            { status: 404 }
-        );
+        return errorResponse("Snippet not found", 404);
     }
 
-    return NextResponse.json(
-        { snippet: data },
-        { status: 200 }
-    );
+    const tagMap = await getTagsBySnippetIds([data.id]);
+
+    return okResponse({
+        snippet: {
+            ...data,
+            tags: tagMap.get(data.id) ?? [],
+        },
+    });
 }
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
     const payload = authGuard(request);
-
     if (!payload) {
-        return NextResponse.json(
-            { error: "Unauthorized" },
-            { status: 401 }
-        );
+        return errorResponse("Unauthorized", 401);
     }
 
     const { id } = await params;
+    if (!uuidSchema.safeParse(id).success) {
+        return errorResponse("Invalid snippet ID", 400);
+    }
 
-    const body = await request.json();
+    let body: unknown;
+    try {
+        body = await request.json();
+    } catch {
+        return errorResponse("Invalid JSON payload", 400);
+    }
 
     const validation = snippetSchema.safeParse(body);
-
     if (!validation.success) {
-        return NextResponse.json(
-            {
-                message: "Validation failed",
-                error: validation.error.flatten(),
-            },
-            {
-                status: 400,
-            }
+        return errorResponse(
+            "Validation failed",
+            400,
+            validation.error.flatten().fieldErrors
         );
     }
 
-    const existing = await supabase
+    const { data: existing, error: existingError } = await supabase
         .from("snippets")
-        .select("*")
+        .select("id, title, slug")
         .eq("id", id)
         .eq("user_id", payload.id)
-        .single();
-
-    if (existing.error || !existing.data) {
-        return NextResponse.json(
-            { error: "Snippet not found" },
-            { status: 404 }
-        );
-    }
-
-    const {title, description, code, language, is_public} = validation.data;
-
-    let slug = existing.data.slug;
-
-    if (is_public && title !== existing.data.title) {
-        slug = await generateUniqueSlug(title);
-    }
-
-    if (is_public) {
-        const shouldGenerateSlug = !existing.data.slug || title !== existing.data.title;
-
-        if (shouldGenerateSlug) {
-            slug = await generateUniqueSlug(title);
-        }
-    } else {
-        slug = null;
-    }
-
-    const { data, error } = await supabase
-        .from("snippets")
-        .update({
-            title,
-            description,
-            code,
-            language,
-            is_public,
-            slug,
-        })
-        .eq("id", id)
-        .eq("user_id", payload.id)
-        .select()
         .maybeSingle();
 
-    if (error) {
-        return NextResponse.json(
-            { error: error.message },
-            { status: 500 }
-        );
+    if (existingError) {
+        console.error("Fetch existing snippet failed:", existingError);
+        return errorResponse("Failed to update snippet", 500);
     }
 
-    return NextResponse.json(
-        {
-            message: "Snippet updated successfully",
-            snippet: data,
-        },
-        {
-            status: 200,
+    if (!existing) {
+        return errorResponse("Snippet not found", 404);
+    }
+
+    const { title, description, code, language, is_public, tags } = validation.data;
+
+    try {
+        let nextSlug: string | null = null;
+        if (is_public) {
+            const needsNewSlug = !existing.slug || title !== existing.title;
+            nextSlug = needsNewSlug ? await generateUniqueSlug(title) : existing.slug;
         }
-    );
+
+        const { data, error } = await supabase
+            .from("snippets")
+            .update({
+                title,
+                description,
+                code,
+                language,
+                is_public,
+                slug: nextSlug,
+            })
+            .eq("id", id)
+            .eq("user_id", payload.id)
+            .select("id, user_id, forked_from, title, description, code, language, is_public, slug, created_at, updated_at")
+            .maybeSingle();
+
+        if (error || !data) {
+            console.error("Update snippet failed:", error);
+            return errorResponse("Failed to update snippet", 500);
+        }
+
+        const nextTags = tags !== undefined
+            ? await syncSnippetTags(data.id, tags)
+            : ((await getTagsBySnippetIds([data.id])).get(data.id) ?? []);
+
+        return okResponse(
+            {
+                snippet: {
+                    ...data,
+                    tags: nextTags,
+                },
+            },
+            { message: "Snippet updated successfully" }
+        );
+    } catch (error) {
+        console.error("Update snippet error:", error);
+        return errorResponse("Failed to update snippet", 500);
+    }
 }
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const payload = authGuard(request);
-
     if (!payload) {
-        return NextResponse.json(
-            { error: "Unauthorized" },
-            { status: 401 }
-        );
+        return errorResponse("Unauthorized", 401);
     }
 
     const { id } = await params;
+    if (!uuidSchema.safeParse(id).success) {
+        return errorResponse("Invalid snippet ID", 400);
+    }
 
-    const { error } = await supabase
+    const { data, error } = await supabase
         .from("snippets")
         .delete()
         .eq("id", id)
-        .eq("user_id", payload.id);
+        .eq("user_id", payload.id)
+        .select("id")
+        .maybeSingle();
 
     if (error) {
-        return NextResponse.json(
-            { error: error.message },
-            { status: 500 }
-        );
+        console.error("Delete snippet failed:", error);
+        return errorResponse("Failed to delete snippet", 500);
     }
 
-    return new NextResponse(null, {
-        status: 204,
-    });
+    if (!data) {
+        return errorResponse("Snippet not found", 404);
+    }
+
+    return okResponse(null, { message: "Snippet deleted successfully" });
 }
