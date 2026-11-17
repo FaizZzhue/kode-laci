@@ -81,7 +81,7 @@ export default function RegisterPage() {
                             required
                             minLength={3}
                             maxLength={30}
-                            pattern="[a-zA-Z0-9_-]+"
+                            pattern="[a-zA-Z0-9_\-]+"
                             autoComplete="username"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
