@@ -1,48 +1,51 @@
-import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
+import { supabase } from "@/lib/supabase";
 import { registerSchema } from "@/lib/validations";
-import { signToken } from "@/lib/auth";
+import { getAuthCookieOptions, signToken } from "@/lib/auth";
+import { errorResponse, okResponse } from "@/lib/api-response";
 
 export async function POST(request: NextRequest) {
     try {
-        const body = await request.json();
-        const parsed = registerSchema.safeParse(body);
+        let body: unknown;
+        try {
+            body = await request.json();
+        } catch {
+            return errorResponse("Invalid JSON payload", 400);
+        }
 
+        const parsed = registerSchema.safeParse(body);
         if (!parsed.success) {
-            return NextResponse.json (
-                {
-                    message: "Validation failed",
-                    errors: parsed.error.flatten(),
-                },
-                { status: 400 }
+            return errorResponse(
+                "Validation failed",
+                400,
+                parsed.error.flatten().fieldErrors
             );
         }
 
         const { username, email, password } = parsed.data;
-        const { data: existingUser } = await supabase
-            .from("users")
-            .select("email, username")
-            .or(`email.eq.${email},username.eq.${username}`)
-            .maybeSingle();
-        if (existingUser) {
-            if (existingUser.email === email) {
-                return NextResponse.json(
-                    { message: "Email already registered" },
-                    { status: 409 }
-                );
-            }
 
-            if (existingUser.username === username) {
-                return NextResponse.json(
-                    { message: "Username already registered" },
-                    { status: 409 }
-                );
-            }
+        const [{ data: existingEmail, error: emailError }, { data: existingUsername, error: usernameError }] =
+            await Promise.all([
+                supabase.from("users").select("id").eq("email", email).maybeSingle(),
+                supabase.from("users").select("id").eq("username", username).maybeSingle(),
+            ]);
+
+        if (emailError || usernameError) {
+            console.error("Register uniqueness check failed:", emailError || usernameError);
+            return errorResponse("Internal Server Error", 500);
+        }
+
+        if (existingEmail) {
+            return errorResponse("Email already registered", 409);
+        }
+
+        if (existingUsername) {
+            return errorResponse("Username already registered", 409);
         }
 
         const passwordHash = await bcrypt.hash(password, 10);
-        const {data: user, error} = await supabase
+        const { data: user, error } = await supabase
             .from("users")
             .insert({
                 username,
@@ -51,8 +54,10 @@ export async function POST(request: NextRequest) {
             })
             .select("id, username, email, avatar_url, created_at")
             .single();
-        if (error) {
-            throw error;
+
+        if (error || !user) {
+            console.error("Register insert failed:", error);
+            return errorResponse("Internal Server Error", 500);
         }
 
         const token = signToken({
@@ -60,22 +65,19 @@ export async function POST(request: NextRequest) {
             email: user.email,
         });
 
-        return NextResponse.json(
-            {
-                message: "Register success",
-                token,
-                user,
-            },
-            {status: 201}
+        const response = okResponse(
+            { user },
+            { message: "Register success", status: 201 }
         );
+
+        response.cookies.set({
+            ...getAuthCookieOptions(),
+            value: token,
+        });
+
+        return response;
     } catch (error) {
-        console.error(error);
-        
-        return NextResponse.json (
-            {
-                message: "Internal Server Error",
-            },
-            {status: 500}
-        );
+        console.error("Register error:", error);
+        return errorResponse("Internal Server Error", 500);
     }
 }

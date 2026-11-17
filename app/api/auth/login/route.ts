@@ -1,52 +1,47 @@
-import { signToken } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import bcrypt from "bcryptjs";
 import { supabase } from "@/lib/supabase";
 import { loginSchema } from "@/lib/validations";
-import bcrypt from "bcryptjs";
-import { NextResponse } from "next/server";
+import { getAuthCookieOptions, signToken } from "@/lib/auth";
+import { errorResponse, okResponse } from "@/lib/api-response";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
     try {
-        const body = await request.json();
-        const validation = loginSchema.safeParse(body);
+        let body: unknown;
+        try {
+            body = await request.json();
+        } catch {
+            return errorResponse("Invalid JSON payload", 400);
+        }
 
-        if(!validation.success) {
-            return NextResponse.json(
-                {
-                    message: "Validation failed",
-                    error: validation.error.flatten(),
-                },
-                {status: 400}
+        const validation = loginSchema.safeParse(body);
+        if (!validation.success) {
+            return errorResponse(
+                "Validation failed",
+                400,
+                validation.error.flatten().fieldErrors
             );
         }
 
-        const {email, password} = validation.data;
-        const {data: user} = await supabase
+        const { email, password } = validation.data;
+        const { data: user, error } = await supabase
             .from("users")
             .select("id, username, email, password_hash, avatar_url, created_at")
             .eq("email", email)
             .maybeSingle();
-        
-        if (!user) {
-            return NextResponse.json(
-                {message: "Email atau password salah"},
-                {status: 401}
-            );
+
+        if (error) {
+            console.error("Login query failed:", error);
+            return errorResponse("Terjadi kesalahan server", 500);
         }
 
-        if (!user.password_hash) {
-            return NextResponse.json(
-                { message: "User password invalid" },
-                { status: 500 }
-            );
+        if (!user || !user.password_hash) {
+            return errorResponse("Email atau password salah", 401);
         }
 
         const passwordMatch = await bcrypt.compare(password, user.password_hash);
-
         if (!passwordMatch) {
-            return NextResponse.json(
-                {message: "Email atau password salah"},
-                {status: 401}
-            )
+            return errorResponse("Email atau password salah", 401);
         }
 
         const token = signToken({
@@ -62,19 +57,19 @@ export async function POST(request: Request) {
             created_at: user.created_at,
         };
 
-        return NextResponse.json(
-            {
-                message: "Login berhasil",
-                token,
-                user: safeUser,
-            },
-            {status: 200}
+        const response = okResponse(
+            { user: safeUser },
+            { message: "Login berhasil", status: 200 }
         );
+
+        response.cookies.set({
+            ...getAuthCookieOptions(),
+            value: token,
+        });
+
+        return response;
     } catch (error) {
-        console.error(error);
-        return NextResponse.json(
-            {message: "Terjadi kesalahan server"},
-            {status: 500}
-        )
-    };
+        console.error("Login error:", error);
+        return errorResponse("Terjadi kesalahan server", 500);
+    }
 }

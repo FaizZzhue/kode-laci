@@ -1,29 +1,29 @@
+import { NextRequest } from "next/server";
 import { authGuard } from "@/middleware/auth-guard";
 import { supabase } from "@/lib/supabase";
-import { NextRequest, NextResponse } from "next/server";
+import { errorResponse, okResponse } from "@/lib/api-response";
 
 export async function GET(request: NextRequest) {
     const payload = authGuard(request);
 
     if (!payload) {
-        return NextResponse.json(
-            { error: "Unauthorized" },
-            { status: 401 }
-        );
+        return errorResponse("Unauthorized", 401);
     }
 
     const { data: user, error } = await supabase
         .from("users")
-        .select("id, email, username, created_at")
+        .select("id, username, email, avatar_url, created_at")
         .eq("id", payload.id)
-        .single();
+        .maybeSingle();
 
-    if (error || !user) {
-        return NextResponse.json(
-            { error: "User not found" },
-            { status: 404 }
-        );
+    if (error) {
+        console.error("Fetch current user failed:", error);
+        return errorResponse("Internal Server Error", 500);
     }
 
-    return NextResponse.json(user);
+    if (!user) {
+        return errorResponse("User not found", 404);
+    }
+
+    return okResponse(user);
 }
