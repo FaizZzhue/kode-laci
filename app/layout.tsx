@@ -1,38 +1,40 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { JetBrains_Mono, Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
+import { MotionProvider } from "@/components/providers/motion-provider";
 import Navbar from "@/components/layout/navbar";
 import Footer from "@/components/layout/footer";
+import { FloatingDock } from "@/components/layout/floating-dock";
+import type { ChildrenProps } from "@/types";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
-
-const geistSans = Geist({
-    variable: "--font-geist-sans",
+const plusJakarta = Plus_Jakarta_Sans({
     subsets: ["latin"],
+    variable: "--font-sans",
 });
 
-const geistMono = Geist_Mono({
-    variable: "--font-geist-mono",
+const spaceGrotesk = Space_Grotesk({
     subsets: ["latin"],
+    variable: "--font-display",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+    subsets: ["latin"],
+    variable: "--font-mono",
 });
 
 export const metadata: Metadata = {
     title: {
-        default: "KodeLaci — Simpan, Organisir & Bagikan Code Snippet",
-        template: "%s | KodeLaci",
+        default: "KodeLaci — Arsip Code Snippet untuk Developer",
+        template: "%s · KodeLaci",
     },
     description:
-        "Platform manajemen code snippet untuk developer: simpan arsip kode private maupun publik, cari full-text, atur tag, dan fork dengan cepat.",
+        "Simpan potongan kode private atau bagikan lewat tautan /s/slug. Dilengkapi pencarian parsial full-text, tag, dan fork.",
 };
 
-export default function RootLayout({
-    children,
-}: Readonly<{
-    children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<ChildrenProps>) {
     return (
         <html
             lang="id"
@@ -40,15 +42,15 @@ export default function RootLayout({
             suppressHydrationWarning
             className={cn(
                 "h-full antialiased",
-                geistSans.variable,
-                geistMono.variable,
-                "font-sans",
-                inter.variable
+                plusJakarta.variable,
+                spaceGrotesk.variable,
+                jetbrainsMono.variable,
+                "font-sans"
             )}
         >
             <body
                 suppressHydrationWarning
-                className="flex min-h-full flex-col bg-background text-foreground"
+                className="flex min-h-full flex-col bg-background text-foreground selection:bg-primary/20 selection:text-foreground"
             >
                 <ThemeProvider
                     attribute="class"
@@ -56,11 +58,14 @@ export default function RootLayout({
                     enableSystem
                     disableTransitionOnChange
                 >
-                    <AuthProvider>
-                        <Navbar />
-                        <div className="flex flex-1 flex-col pt-16">{children}</div>
-                        <Footer />
-                    </AuthProvider>
+                    <MotionProvider>
+                        <AuthProvider>
+                            <Navbar />
+                            <div className="flex flex-1 flex-col pt-20">{children}</div>
+                            <Footer />
+                            <FloatingDock />
+                        </AuthProvider>
+                    </MotionProvider>
                 </ThemeProvider>
             </body>
         </html>
