@@ -1,71 +1,33 @@
 "use client";
 
-import { FormEvent, Suspense, useState } from "react";
+import { Suspense } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, LogIn } from "lucide-react";
-import api from "@/lib/api";
-import { useAuth } from "@/hooks/use-auth";
-import { extractApiError } from "@/hooks/use-snippets";
+import { useSearchParams } from "next/navigation";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useLoginForm } from "@/hooks/use-auth-form";
+import { AuthShell } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
-import type { ApiResponse, User } from "@/types";
 
 function LoginForm() {
-    const router = useRouter();
     const searchParams = useSearchParams();
-    const { setSessionUser } = useAuth();
-
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [error, setError] = useState<string | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    async function handleSubmit(event: FormEvent) {
-        event.preventDefault();
-        setError(null);
-        setIsSubmitting(true);
-
-        try {
-            const response = await api.post<ApiResponse<{ user: User }>>("/auth/login", {
-                email,
-                password,
-            });
-
-            const loggedInUser = response.data.data?.user;
-            if (!loggedInUser) {
-                throw new Error("Respons login tidak valid.");
-            }
-
-            setSessionUser(loggedInUser);
-
-            const redirectTo = searchParams.get("redirect");
-            const safeRedirect =
-                redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")
-                    ? redirectTo
-                    : "/dashboard";
-
-            router.push(safeRedirect);
-        } catch (err) {
-            setError(extractApiError(err, "Login gagal. Periksa email dan password Anda."));
-        } finally {
-            setIsSubmitting(false);
-        }
-    }
+    const {
+        email,
+        setEmail,
+        password,
+        setPassword,
+        showPassword,
+        togglePassword,
+        error,
+        isSubmitting,
+        handleSubmit,
+    } = useLoginForm(searchParams.get("redirect"));
 
     return (
-        <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
-            <div className="mb-6 text-center">
-                <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <LogIn className="h-5 w-5" />
-                </div>
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                    Masuk ke KodeLaci
-                </h1>
-                <p className="mt-1 text-sm text-muted-foreground">
-                    Kelola dan cari snippet kode pribadi Anda.
-                </p>
-            </div>
-
+        <AuthShell
+            eyebrow="Akses Laci"
+            title="Masuk ke KodeLaci"
+            subtitle="Lanjutkan mengelola snippet private dan publik Anda."
+        >
             {error && (
                 <div
                     role="alert"
@@ -96,22 +58,32 @@ function LoginForm() {
                     <label htmlFor="login-password" className="text-sm font-medium text-foreground">
                         Password
                     </label>
-                    <input
-                        id="login-password"
-                        type="password"
-                        required
-                        minLength={8}
-                        autoComplete="current-password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Minimal 8 karakter"
-                        className="w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
-                    />
+                    <div className="relative">
+                        <input
+                            id="login-password"
+                            type={showPassword ? "text" : "password"}
+                            required
+                            minLength={8}
+                            autoComplete="current-password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Minimal 8 karakter"
+                            className="w-full rounded-lg border border-input bg-background py-2.5 pr-10 pl-3.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                        />
+                        <button
+                            type="button"
+                            onClick={togglePassword}
+                            aria-label={showPassword ? "Sembunyikan password" : "Lihat password"}
+                            className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                    </div>
                 </div>
 
                 <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Masuk
+                    Masuk ke Laci
                 </Button>
             </form>
 
@@ -121,23 +93,20 @@ function LoginForm() {
                     Daftar di sini
                 </Link>
             </p>
-        </div>
+        </AuthShell>
     );
 }
 
 export default function LoginPage() {
     return (
-        <main className="flex flex-1 items-center justify-center px-gutter py-16">
-            <Suspense
-                fallback={
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Memuat form login...</span>
-                    </div>
-                }
-            >
-                <LoginForm />
-            </Suspense>
-        </main>
+        <Suspense
+            fallback={
+                <main className="flex flex-1 items-center justify-center py-20 font-mono text-xs text-muted-foreground">
+                    memuat halaman masuk...
+                </main>
+            }
+        >
+            <LoginForm />
+        </Suspense>
     );
 }

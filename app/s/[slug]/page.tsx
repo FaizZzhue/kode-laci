@@ -3,21 +3,17 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Calendar, GitFork, User as UserIcon } from "lucide-react";
 import { getPublicSnippetBySlug } from "@/lib/public-snippets";
-import { getLanguageLabel } from "@/constants/languages";
+import { getLanguageLabel } from "@/lib/utils";
 import { CodeBlock } from "@/components/snippets/code-block";
 import { ForkButton } from "@/components/snippets/fork-button";
+import { ShareUrlButton } from "@/components/snippets/share-url-button";
+import type { RouteSlugParams } from "@/types";
 
 export const dynamic = "force-dynamic";
 
-type PublicSnippetPageProps = {
-    params: Promise<{
-        slug: string;
-    }>;
-};
-
 export async function generateMetadata({
     params,
-}: PublicSnippetPageProps): Promise<Metadata> {
+}: RouteSlugParams): Promise<Metadata> {
     const { slug } = await params;
 
     try {
@@ -34,7 +30,7 @@ export async function generateMetadata({
     }
 }
 
-export default async function PublicSnippetPage({ params }: PublicSnippetPageProps) {
+export default async function PublicSnippetPage({ params }: RouteSlugParams) {
     const { slug } = await params;
 
     let snippet = null;
@@ -56,47 +52,55 @@ export default async function PublicSnippetPage({ params }: PublicSnippetPagePro
 
     return (
         <main className="mx-auto w-full max-w-4xl flex-1 px-gutter py-10">
-            <div className="mb-6">
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                 <Link
                     href="/#explore"
-                    className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                    className="inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
                 >
-                    <ArrowLeft className="h-4 w-4" />
-                    <span>Kembali ke Explore</span>
+                    <ArrowLeft className="h-3.5 w-3.5" />
+                    <span>kembali ke indeks publik</span>
                 </Link>
+
+                <span className="font-mono text-xs text-muted-foreground">
+                    /s/{snippet.slug}
+                </span>
             </div>
 
             <header className="mb-6 rounded-xl border border-border bg-card p-6 shadow-xs">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="space-y-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                            <span className="rounded-md bg-primary/10 px-2.5 py-0.5 font-mono text-xs font-medium text-primary">
+                <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="space-y-2.5">
+                        <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
+                            <span className="inline-flex items-center gap-1.5 rounded border border-border bg-surface px-2.5 py-0.5 font-medium text-foreground">
+                                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                                 {getLanguageLabel(snippet.language)}
                             </span>
                             {snippet.forked_from && (
-                                <span className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">
+                                <span className="inline-flex items-center gap-1 rounded bg-secondary px-2 py-0.5 text-secondary-foreground">
                                     <GitFork className="h-3 w-3" />
-                                    Forked Snippet
+                                    hasil fork
                                 </span>
                             )}
                         </div>
 
-                        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                        <h1 className="font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                             {snippet.title}
                         </h1>
-                        <p className="text-sm leading-relaxed text-muted-foreground">
+                        <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
                             {snippet.description}
                         </p>
                     </div>
 
-                    <ForkButton
-                        snippetId={snippet.id}
-                        authorUsername={snippet.author?.username}
-                        forkCount={snippet.fork_count}
-                    />
+                    <div className="flex flex-wrap items-start gap-2 sm:shrink-0">
+                        {snippet.slug && <ShareUrlButton slug={snippet.slug} />}
+                        <ForkButton
+                            snippetId={snippet.id}
+                            authorUsername={snippet.author?.username}
+                            forkCount={snippet.fork_count}
+                        />
+                    </div>
                 </div>
 
-                <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4 text-xs text-muted-foreground">
+                <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4 font-mono text-xs text-muted-foreground">
                     <div className="flex flex-wrap items-center gap-4">
                         {snippet.author?.username && (
                             <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
@@ -115,7 +119,7 @@ export default async function PublicSnippetPage({ params }: PublicSnippetPagePro
                             {snippet.tags.map((tag) => (
                                 <span
                                     key={tag.id}
-                                    className="rounded-full border border-border bg-muted/60 px-2.5 py-0.5 text-xs text-muted-foreground"
+                                    className="rounded border border-border bg-surface px-2.5 py-0.5 text-muted-foreground"
                                 >
                                     #{tag.name}
                                 </span>
