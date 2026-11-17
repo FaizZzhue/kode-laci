@@ -1,161 +1,101 @@
 import Link from "next/link";
-import { ArrowRight, Code2, GitFork, Lock, Search, Share2, Tag } from "lucide-react";
+import { ArrowRight, Terminal } from "lucide-react";
+import { HeroDrawerPreview } from "@/components/home/hero-drawer-preview";
+import { WorkbenchShowcase } from "@/components/home/workbench-showcase";
 import { PublicExplore } from "@/components/snippets/public-explore";
-
-const FEATURES = [
-    {
-        icon: Code2,
-        title: "20+ Bahasa Pemrograman",
-        description: "Simpan potongan kode TypeScript, Python, SQL, Go, Rust, dan lainnya lengkap dengan syntax highlighting.",
-    },
-    {
-        icon: Search,
-        title: "Pencarian Full-Text Cepat",
-        description: "Didukung PostgreSQL tsvector & GIN Index untuk mencari berdasarkan judul, deskripsi, maupun isi kode.",
-    },
-    {
-        icon: Lock,
-        title: "Private atau Publik",
-        description: "Jaga kode rahasia tetap private di laci Anda, atau publikasikan dengan URL slug unik yang mudah dibagikan.",
-    },
-    {
-        icon: GitFork,
-        title: "Fork Snippet Publik",
-        description: "Temukan kode berguna dari developer lain? Fork ke akun pribadi Anda dalam satu klik untuk dimodifikasi.",
-    },
-    {
-        icon: Tag,
-        title: "Tag & Filter Rapi",
-        description: "Kelompokkan snippet dengan tag bebas dan filter cepat per bahasa agar laci kode selalu terstruktur.",
-    },
-    {
-        icon: Share2,
-        title: "Siap Dibagikan Seketika",
-        description: "Setiap snippet publik mendapatkan tautan /s/[slug] yang bersih lengkap dengan tombol salin kode.",
-    },
-];
-
-const STEPS = [
-    {
-        step: "01",
-        title: "Simpan Potongan Kode",
-        description: "Buat akun gratis dan simpan fungsi, query, atau konfigurasi yang sering Anda gunakan.",
-    },
-    {
-        step: "02",
-        title: "Kelompokkan & Cari",
-        description: "Beri bahasa pemrograman dan tag agar mudah ditemukan kembali lewat pencarian full-text.",
-    },
-    {
-        step: "03",
-        title: "Bagikan atau Fork",
-        description: "Ubah visibilitas ke publik untuk mendapatkan link /s/[slug], atau fork snippet milik komunitas.",
-    },
-];
+import { Squares } from "@/components/reactbits/squares";
+import { BlurText } from "@/components/reactbits/blur-text";
+import { DecryptedText } from "@/components/reactbits/decrypted-text";
+import { Magnet } from "@/components/reactbits/magnet";
+import { ClickSpark } from "@/components/reactbits/click-spark";
 
 export default function HomePage() {
     return (
         <main className="flex-1">
-            <section className="relative overflow-hidden border-b border-border bg-linear-to-b from-primary/5 via-background to-background">
-                <div className="mx-auto flex max-w-container-max flex-col items-center px-gutter py-20 text-center sm:py-28">
-                    <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3.5 py-1 text-xs font-medium text-primary">
-                        Personal Code Snippet Vault untuk Developer
-                    </span>
-
-                    <h1 className="max-w-3xl text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-                        Satu laci terorganisir untuk semua{" "}
-                        <span className="text-primary">code snippet</span> Anda.
-                    </h1>
-
-                    <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-                        Berhenti membongkar repository lama hanya untuk mencari satu fungsi. Simpan,
-                        cari secara full-text, dan bagikan potongan kode Anda lewat URL unik dengan
-                        KodeLaci.
-                    </p>
-
-                    <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-                        <Link
-                            href="/register"
-                            className="shimmer-btn inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-on-primary-container"
-                        >
-                            Mulai Gratis Sekarang
-                            <ArrowRight className="h-4 w-4" />
-                        </Link>
-                        <a
-                            href="#explore"
-                            className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-6 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-                        >
-                            Jelajah Snippet Publik
-                        </a>
-                    </div>
+            <section className="relative overflow-hidden border-b border-border">
+                {/* React Bits Interactive Canvas Squares Background */}
+                <div className="pointer-events-auto absolute inset-0 opacity-70">
+                    <Squares
+                        direction="diagonal"
+                        speed={0.28}
+                        squareSize={48}
+                        borderColor="rgba(128, 128, 128, 0.14)"
+                        hoverFillColor="rgba(217, 78, 31, 0.14)"
+                    />
                 </div>
-            </section>
+                <div
+                    className="pointer-events-none absolute inset-0 bg-linear-to-b from-background/40 via-background/70 to-background"
+                    aria-hidden="true"
+                />
 
-            <section id="features" className="mx-auto max-w-container-max px-gutter py-16">
-                <div className="mb-10 max-w-2xl">
-                    <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                        Dirancang untuk Kecepatan Developer
-                    </h2>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                        Fokus pada penyimpanan dan pencarian kode yang ringan tanpa bloat.
-                    </p>
-                </div>
+                <div className="relative z-10 mx-auto grid max-w-container-max items-center gap-10 px-gutter py-12 sm:py-18 lg:grid-cols-[1.05fr_1fr] lg:gap-12">
+                    <div className="space-y-6">
+                        <div className="inline-flex items-center gap-2 rounded-lg border border-border bg-card/90 px-3 py-1.5 font-mono text-xs text-muted-foreground shadow-2xs backdrop-blur-xs">
+                            <Terminal className="h-3.5 w-3.5 text-primary" />
+                            <DecryptedText
+                                text="vault snippet · fts prefix + /s/slug"
+                                animateOn="view"
+                                speed={30}
+                                className="text-foreground"
+                            />
+                        </div>
 
-                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                    {FEATURES.map((feature) => {
-                        const Icon = feature.icon;
-                        return (
-                            <div
-                                key={feature.title}
-                                className="rounded-xl border border-border bg-card p-6 shadow-xs"
-                            >
-                                <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                    <Icon className="h-5 w-5" />
-                                </div>
-                                <h3 className="text-base font-semibold text-foreground">
-                                    {feature.title}
-                                </h3>
-                                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                                    {feature.description}
-                                </p>
-                            </div>
-                        );
-                    })}
-                </div>
-            </section>
+                        <h1 className="font-display text-3xl font-bold tracking-tight text-foreground sm:text-5xl sm:leading-[1.08]">
+                            <BlurText
+                                text="Potongan kode yang sering dicari ulang, sekarang punya laci sendiri."
+                                delay={45}
+                                animateBy="words"
+                            />
+                        </h1>
 
-            <section id="how-it-works" className="border-y border-border bg-muted/30">
-                <div className="mx-auto max-w-container-max px-gutter py-16">
-                    <div className="mb-10 max-w-2xl">
-                        <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                            Cara Kerja KodeLaci
-                        </h2>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                            Tiga langkah sederhana dari ide hingga siap pakai ulang.
+                        <p className="max-w-xl text-base leading-relaxed text-muted-foreground">
+                            Berhenti menggali commit lama hanya untuk satu hook atau query SQL.
+                            Simpan snippet private, cari cepat lewat potongan kata seperti{" "}
+                            <code className="rounded bg-secondary px-1.5 py-0.5 font-mono text-xs text-foreground">
+                                reac
+                            </code>
+                            , atau bagikan lewat tautan{" "}
+                            <code className="rounded bg-secondary px-1.5 py-0.5 font-mono text-xs text-foreground">
+                                /s/slug
+                            </code>
+                            .
                         </p>
+
+                        <div className="flex flex-wrap items-center gap-3 pt-1">
+                            <ClickSpark sparkColor="#ff6b3d" sparkCount={10}>
+                                <Magnet magnetStrength={3.5} padding={50}>
+                                    <Link
+                                        href="/register"
+                                        className="group inline-flex h-11 items-center gap-2 rounded-lg bg-foreground px-5 text-sm font-semibold text-background transition-colors hover:bg-primary hover:text-primary-foreground"
+                                    >
+                                        <span>Buat Laci Kode</span>
+                                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                                    </Link>
+                                </Magnet>
+                            </ClickSpark>
+
+                            <a
+                                href="#explore"
+                                className="inline-flex h-11 items-center gap-2 rounded-lg border border-border bg-card/90 px-5 text-sm font-medium text-foreground backdrop-blur-xs transition-colors hover:bg-accent"
+                            >
+                                Lihat Snippet Publik
+                            </a>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border/80 pt-5 font-mono text-xs text-muted-foreground">
+                            <span>23+ bahasa (Shiki)</span>
+                            <span>·</span>
+                            <span>Private &amp; Public Slug</span>
+                            <span>·</span>
+                            <span>Tekan / untuk cari</span>
+                        </div>
                     </div>
 
-                    <div className="grid gap-6 md:grid-cols-3">
-                        {STEPS.map((item) => (
-                            <div
-                                key={item.step}
-                                className="rounded-xl border border-border bg-card p-6"
-                            >
-                                <span className="font-mono text-sm font-bold text-primary">
-                                    {item.step}
-                                </span>
-                                <h3 className="mt-2 text-base font-semibold text-foreground">
-                                    {item.title}
-                                </h3>
-                                <p className="mt-2 text-sm text-muted-foreground">
-                                    {item.description}
-                                </p>
-                            </div>
-                        ))}
-                    </div>
+                    <HeroDrawerPreview />
                 </div>
             </section>
 
+            <WorkbenchShowcase />
             <PublicExplore />
         </main>
     );
