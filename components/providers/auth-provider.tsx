@@ -1,27 +1,13 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import api from "@/lib/api";
+import { createContext, useCallback, useEffect, useState } from "react";
 import { authStorage } from "@/lib/auth-storage";
-import type { ApiResponse, User } from "@/types";
+import { fetchCurrentUser, logoutRequest } from "@/lib/snippet-api";
+import type { AuthContextValue, ChildrenProps, User } from "@/types";
 
-type AuthContextValue = {
-    user: User | null;
-    isLoading: boolean;
-    isAuthenticated: boolean;
-    setSessionUser: (user: User) => void;
-    logout: (redirect?: boolean) => Promise<void>;
-    refreshSession: () => Promise<void>;
-};
+export const AuthContext = createContext<AuthContextValue | null>(null);
 
-const AuthContext = createContext<AuthContextValue | null>(null);
-
-async function fetchCurrentUser(): Promise<User | null> {
-    const response = await api.get<ApiResponse<User>>("/auth/me");
-    return response.data.data ?? null;
-}
-
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: ChildrenProps) {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -51,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const logout = useCallback(async (redirect = true) => {
         try {
-            await api.post("/auth/logout");
+            await logoutRequest();
         } catch {
             // Abaikan error jaringan saat membersihkan sesi lokal.
         } finally {
@@ -108,12 +94,4 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             {children}
         </AuthContext.Provider>
     );
-}
-
-export function useAuthContext(): AuthContextValue {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error("useAuth must be used within AuthProvider");
-    }
-    return context;
 }

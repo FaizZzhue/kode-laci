@@ -1,45 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import axios from "axios";
-import api from "@/lib/api";
-import type { ApiResponse, PaginationMeta, Snippet } from "@/types";
-
-export type SnippetFilters = {
-    q?: string;
-    language?: string;
-    tag?: string;
-    visibility?: "all" | "public" | "private";
-    page?: number;
-    limit?: number;
-};
-
-export type SnippetPayload = {
-    title: string;
-    description: string;
-    code: string;
-    language: string;
-    is_public: boolean;
-    tags?: string[];
-};
-
-export function extractApiError(error: unknown, fallback: string): string {
-    if (axios.isAxiosError(error)) {
-        const data = error.response?.data as { message?: string; error?: string } | undefined;
-        return data?.message || data?.error || fallback;
-    }
-    if (error instanceof Error) {
-        return error.message;
-    }
-    return fallback;
-}
-
-type QueryState = {
-    settledKey: string | null;
-    snippets: Snippet[];
-    meta: PaginationMeta | null;
-    error: string | null;
-};
+import { extractApiError, fetchMySnippetById, fetchSnippetsList } from "@/lib/snippet-api";
+import type { Snippet, SnippetFilters, SnippetQueryState } from "@/types";
 
 function useSnippetQuery(
     endpoint: string,
@@ -60,7 +23,7 @@ function useSnippetQuery(
         reloadTick,
     });
 
-    const [state, setState] = useState<QueryState>({
+    const [state, setState] = useState<SnippetQueryState>({
         settledKey: null,
         snippets: [],
         meta: null,
@@ -70,22 +33,13 @@ function useSnippetQuery(
     useEffect(() => {
         let active = true;
 
-        api.get<ApiResponse<{ snippets: Snippet[] }>>(endpoint, {
-            params: {
-                ...(q ? { q } : {}),
-                ...(language ? { language } : {}),
-                ...(tag ? { tag } : {}),
-                ...(visibility ? { visibility } : {}),
-                page,
-                limit,
-            },
-        })
-            .then((response) => {
+        fetchSnippetsList(endpoint, { q, language, tag, visibility, page, limit })
+            .then((data) => {
                 if (!active) return;
                 setState({
                     settledKey: requestKey,
-                    snippets: response.data.data?.snippets ?? [],
-                    meta: response.data.meta ?? null,
+                    snippets: data.data?.snippets ?? [],
+                    meta: data.meta ?? null,
                     error: null,
                 });
             })
@@ -128,38 +82,35 @@ export function usePublicSnippets(filters: Omit<SnippetFilters, "visibility">) {
     );
 }
 
-export async function fetchMySnippetById(id: string): Promise<Snippet> {
-    const response = await api.get<ApiResponse<{ snippet: Snippet }>>(`/snippets/${id}`);
-    if (!response.data.data?.snippet) {
-        throw new Error("Snippet tidak ditemukan");
-    }
-    return response.data.data.snippet;
-}
+export function useMySnippetDetail(id: string) {
+    const [snippet, setSnippet] = useState<Snippet | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-export async function createSnippet(payload: SnippetPayload): Promise<Snippet> {
-    const response = await api.post<ApiResponse<{ snippet: Snippet }>>("/snippets", payload);
-    if (!response.data.data?.snippet) {
-        throw new Error("Gagal membuat snippet");
-    }
-    return response.data.data.snippet;
-}
+    useEffect(() => {
+        let active = true;
 
-export async function updateSnippet(id: string, payload: SnippetPayload): Promise<Snippet> {
-    const response = await api.put<ApiResponse<{ snippet: Snippet }>>(`/snippets/${id}`, payload);
-    if (!response.data.data?.snippet) {
-        throw new Error("Gagal memperbarui snippet");
-    }
-    return response.data.data.snippet;
-}
+        fetchMySnippetById(id)
+            .then((data) => {
+                if (active) {
+                    setSnippet(data);
+                }
+            })
+            .catch((err) => {
+                if (active) {
+                    setError(extractApiError(err, "Gagal memuat detail snippet."));
+                }
+            })
+            .finally(() => {
+                if (active) {
+                    setIsLoading(false);
+                }
+            });
 
-export async function deleteSnippet(id: string): Promise<void> {
-    await api.delete(`/snippets/${id}`);
-}
+        return () => {
+            active = false;
+        };
+    }, [id]);
 
-export async function forkSnippet(id: string): Promise<Snippet> {
-    const response = await api.post<ApiResponse<{ snippet: Snippet }>>(`/snippets/${id}/fork`);
-    if (!response.data.data?.snippet) {
-        throw new Error("Gagal melakukan fork snippet");
-    }
-    return response.data.data.snippet;
+    return { snippet, setSnippet, isLoading, error };
 }
