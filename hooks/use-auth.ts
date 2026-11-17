@@ -1,62 +1,74 @@
-import { STORAGE_KEYS } from "@/constants/storage";
-import api from "@/lib/api";
-import { ApiResponse, User } from "@/types";
+"use client";
+
 import { useCallback, useEffect, useState } from "react";
+import api from "@/lib/api";
+import { authStorage } from "@/lib/auth-storage";
+import type { ApiResponse, User } from "@/types";
 
 export function useAuth() {
-    const [user, setUser] = useState<User | null>(null)
-    const [token, setToken] = useState<string | null>(null)
-    const [isLoading, setIsLoading] = useState(true)
+    const [user, setUser] = useState<User | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const login = useCallback((token: string, user: User) => {
-        localStorage.setItem(STORAGE_KEYS.TOKEN, token)
-        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user))
+    const setSessionUser = useCallback((nextUser: User) => {
+        authStorage.setUser(nextUser);
+        setUser(nextUser);
+    }, []);
 
-        setToken(token)
-        setUser(user)
-    }, [])
+    const logout = useCallback(async (redirect = true) => {
+        try {
+            await api.post("/auth/logout");
+        } catch {
+            // Abaikan kegagalan jaringan saat membersihkan state sesi lokal.
+        } finally {
+            authStorage.clear();
+            setUser(null);
 
-    const logout = useCallback(() => {
-        localStorage.removeItem(STORAGE_KEYS.TOKEN)
-        localStorage.removeItem(STORAGE_KEYS.USER)
-
-        setToken(null)
-        setUser(null)
-        
-        window.location.href= '/login'
-    }, [])
-
-    useEffect(() => {
-        const initializeAuth = async () => {
-            try {
-                const storedToken = localStorage.getItem(STORAGE_KEYS.TOKEN)
-
-                if (!storedToken) {
-                    setIsLoading(false)
-                    return
-                }
-
-                setToken(storedToken)
-
-                const response = await api.get<ApiResponse<User>>('/auth/me')
-
-                if (response.data.data) {
-                    const currentUser = response.data.data
-
-                    setUser(currentUser)
-                    localStorage.setItem('user', JSON.stringify(currentUser))
-                } else {
-                    logout()
-                }
-            } catch {
-                logout()
-            } finally {
-                setIsLoading(false)
+            if (redirect && typeof window !== "undefined" && window.location.pathname !== "/login") {
+                window.location.href = "/login";
             }
         }
+    }, []);
 
-        initializeAuth()
-    }, [logout])
+    useEffect(() => {
+        let active = true;
 
-    return { user, token, isLoading, login, logout, isAuthenticated: !!user && !!token }
+        const initializeAuth = async () => {
+            try {
+                const response = await api.get<ApiResponse<User>>("/auth/me");
+                const currentUser = response.data.data;
+
+                if (!active) return;
+
+                if (currentUser) {
+                    authStorage.setUser(currentUser);
+                    setUser(currentUser);
+                } else {
+                    authStorage.clear();
+                    setUser(null);
+                }
+            } catch {
+                if (!active) return;
+                authStorage.clear();
+                setUser(null);
+            } finally {
+                if (active) {
+                    setIsLoading(false);
+                }
+            }
+        };
+
+        initializeAuth();
+
+        return () => {
+            active = false;
+        };
+    }, []);
+
+    return {
+        user,
+        isLoading,
+        setSessionUser,
+        logout,
+        isAuthenticated: !!user,
+    };
 }

@@ -1,15 +1,30 @@
-import { STORAGE_KEYS } from '@/constants/storage'
+import { STORAGE_KEYS } from "@/constants/storage";
+import type { User } from "@/types";
+
+const isBrowser = () => typeof window !== "undefined";
 
 export const authStorage = {
-    getToken() {
-        return localStorage.getItem(STORAGE_KEYS.TOKEN)
+    getUser(): User | null {
+        if (!isBrowser()) return null;
+        const raw = localStorage.getItem(STORAGE_KEYS.USER);
+        if (!raw) return null;
+
+        try {
+            return JSON.parse(raw) as User;
+        } catch {
+            localStorage.removeItem(STORAGE_KEYS.USER);
+            return null;
+        }
     },
 
-    setToken(token: string) {
-        localStorage.setItem(STORAGE_KEYS.TOKEN, token)
+    setUser(user: User) {
+        if (!isBrowser()) return;
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
     },
 
-    removeToken() {
-        localStorage.removeItem(STORAGE_KEYS.TOKEN)
+    clear() {
+        if (!isBrowser()) return;
+        localStorage.removeItem(STORAGE_KEYS.TOKEN);
+        localStorage.removeItem(STORAGE_KEYS.USER);
     },
-}
+};

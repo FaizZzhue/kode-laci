@@ -1,45 +1,38 @@
-import { STORAGE_KEYS } from '@/constants/storage'
-import axios from 'axios'
+import axios from "axios";
+import { authStorage } from "@/lib/auth-storage";
 
-const token = localStorage.getItem(STORAGE_KEYS.TOKEN)
-let isRedirecting = false
+let isRedirecting = false;
 
 const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL,
+    baseURL: process.env.NEXT_PUBLIC_API_URL || "/api",
+    withCredentials: true,
     headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
     },
-})
+});
 
-// Menambahkan Authorization header jika token tersedia.
-api.interceptors.request.use(
-    (config) => {
-        if (typeof window !== 'undefined') {
-            const token = localStorage.getItem('token')
-
-            if (token) {
-                config.headers['Authorization'] = `Bearer ${token}`
-            }
-        }
-        return config
-    },
-    (error) => Promise.reject(error)
-)
-
-// Handle global error, khususnya token yang sudah tidak valid.
+// Tangani 401 dari endpoint terproteksi (kecuali cek sesi /auth/me di halaman publik).
 api.interceptors.response.use(
     (response) => response,
-    (error) => {        
-        if (typeof window !== 'undefined' && error.response?.status === 401 && !isRedirecting) {
-            isRedirecting = true
+    (error) => {
+        const status = error.response?.status;
+        const requestUrl: string = error.config?.url ?? "";
+        const isSessionProbe = requestUrl.includes("/auth/me");
 
-            localStorage.removeItem(STORAGE_KEYS.TOKEN)
-            localStorage.removeItem(STORAGE_KEYS.USER)
-
-            window.location.href = '/login'
+        if (
+            typeof window !== "undefined" &&
+            status === 401 &&
+            !isSessionProbe &&
+            !isRedirecting &&
+            window.location.pathname !== "/login"
+        ) {
+            isRedirecting = true;
+            authStorage.clear();
+            window.location.href = "/login";
         }
-        return Promise.reject(error)
+
+        return Promise.reject(error);
     }
-)
+);
 
 export default api;
