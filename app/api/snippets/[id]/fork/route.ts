@@ -4,6 +4,7 @@ import { authGuard } from "@/middleware/auth-guard";
 import { uuidSchema } from "@/lib/validations";
 import { errorResponse, okResponse } from "@/lib/api-response";
 import { getTagsBySnippetIds, syncSnippetTags } from "@/lib/snippet-tags";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 interface RouteParams {
     params: Promise<{
@@ -15,6 +16,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const payload = authGuard(request);
     if (!payload) {
         return errorResponse("Unauthorized", 401);
+    }
+
+    const rateLimited = enforceRateLimit(
+        request,
+        "snippets:fork",
+        { limit: 20, windowMs: 60 * 1000 },
+        payload.id
+    );
+    if (rateLimited) {
+        return rateLimited;
     }
 
     const { id } = await params;

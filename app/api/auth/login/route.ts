@@ -4,8 +4,17 @@ import { supabase } from "@/lib/supabase";
 import { loginSchema } from "@/lib/validations";
 import { getAuthCookieOptions, signToken } from "@/lib/auth";
 import { errorResponse, okResponse } from "@/lib/api-response";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
+    const rateLimited = enforceRateLimit(request, "auth:login", {
+        limit: 10,
+        windowMs: 15 * 60 * 1000,
+    });
+    if (rateLimited) {
+        return rateLimited;
+    }
+
     try {
         let body: unknown;
         try {

@@ -3,8 +3,17 @@ import { supabase } from "@/lib/supabase";
 import { snippetListQuerySchema } from "@/lib/validations";
 import { errorResponse, okResponse } from "@/lib/api-response";
 import { getSnippetIdsByTagSlug, getTagsBySnippetIds } from "@/lib/snippet-tags";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export async function GET(request: NextRequest) {
+    const rateLimited = enforceRateLimit(request, "public:snippets", {
+        limit: 60,
+        windowMs: 60 * 1000,
+    });
+    if (rateLimited) {
+        return rateLimited;
+    }
+
     const { searchParams } = new URL(request.url);
     const queryValidation = snippetListQuerySchema.safeParse({
         q: searchParams.get("q") ?? undefined,
