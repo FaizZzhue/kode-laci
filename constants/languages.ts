@@ -1,7 +1,4 @@
-export type LanguageOption = {
-    value: string;
-    label: string;
-};
+import type { LanguageOption } from "@/types";
 
 export const SUPPORTED_LANGUAGES: readonly LanguageOption[] = [
     { value: "typescript", label: "TypeScript" },
@@ -29,7 +26,12 @@ export const SUPPORTED_LANGUAGES: readonly LanguageOption[] = [
     { value: "markdown", label: "Markdown" },
 ] as const;
 
-export function getLanguageLabel(value: string): string {
-    const found = SUPPORTED_LANGUAGES.find((item) => item.value === value.toLowerCase());
-    return found ? found.label : value;
-}
+export const QUICK_LANGUAGES: readonly LanguageOption[] = [
+    { value: "", label: "Semua" },
+    { value: "typescript", label: "TypeScript" },
+    { value: "javascript", label: "JavaScript" },
+    { value: "python", label: "Python" },
+    { value: "sql", label: "SQL" },
+    { value: "go", label: "Go" },
+    { value: "bash", label: "Bash" },
+] as const;
