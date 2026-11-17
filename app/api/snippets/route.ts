@@ -5,6 +5,7 @@ import { generateUniqueSlug } from "@/lib/slug";
 import { snippetListQuerySchema, snippetSchema } from "@/lib/validations";
 import { errorResponse, mapDatabaseErrorMessage, okResponse } from "@/lib/api-response";
 import { getSnippetIdsByTagSlug, getTagsBySnippetIds, syncSnippetTags } from "@/lib/snippet-tags";
+import { resolveSnippetSearchFilter } from "@/lib/snippet-search";
 
 export async function GET(request: NextRequest) {
     const payload = authGuard(request);
@@ -68,9 +69,10 @@ export async function GET(request: NextRequest) {
     }
 
     if (q) {
-        query = query.textSearch("search_vector", q, {
-            type: "websearch",
-        });
+        const orFilter = await resolveSnippetSearchFilter(q);
+        if (orFilter) {
+            query = query.or(orFilter);
+        }
     }
 
     const { data, count, error } = await query

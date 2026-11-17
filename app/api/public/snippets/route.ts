@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { snippetListQuerySchema } from "@/lib/validations";
 import { errorResponse, okResponse } from "@/lib/api-response";
 import { getSnippetIdsByTagSlug, getTagsBySnippetIds } from "@/lib/snippet-tags";
+import { resolveSnippetSearchFilter } from "@/lib/snippet-search";
 import { enforceRateLimit } from "@/lib/rate-limit";
 
 export async function GET(request: NextRequest) {
@@ -63,9 +64,10 @@ export async function GET(request: NextRequest) {
     }
 
     if (q) {
-        query = query.textSearch("search_vector", q, {
-            type: "websearch",
-        });
+        const orFilter = await resolveSnippetSearchFilter(q);
+        if (orFilter) {
+            query = query.or(orFilter);
+        }
     }
 
     const { data, count, error } = await query
