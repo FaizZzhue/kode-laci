@@ -24,16 +24,22 @@ export function normalizeTagInputs(tags: string[] = []): Array<{ name: string; s
     return normalized;
 }
 
-export async function syncSnippetTags(snippetId: string, rawTags: string[] = []): Promise<Tag[]> {
+export async function syncSnippetTags(
+    snippetId: string,
+    rawTags: string[] = [],
+    options?: { skipDelete?: boolean }
+): Promise<Tag[]> {
     const normalized = normalizeTagInputs(rawTags);
 
-    const { error: deleteError } = await supabase
-        .from("snippet_tags")
-        .delete()
-        .eq("snippet_id", snippetId);
+    if (!options?.skipDelete) {
+        const { error: deleteError } = await supabase
+            .from("snippet_tags")
+            .delete()
+            .eq("snippet_id", snippetId);
 
-    if (deleteError) {
-        throw new Error(deleteError.message);
+        if (deleteError) {
+            throw deleteError;
+        }
     }
 
     if (normalized.length === 0) {
@@ -46,7 +52,7 @@ export async function syncSnippetTags(snippetId: string, rawTags: string[] = [])
         .select("id, name, slug");
 
     if (upsertError || !upsertedTags) {
-        throw new Error(upsertError?.message ?? "Failed to upsert tags");
+        throw upsertError ?? new Error("Failed to upsert tags");
     }
 
     const links = upsertedTags.map((tag) => ({
@@ -59,7 +65,7 @@ export async function syncSnippetTags(snippetId: string, rawTags: string[] = [])
         .insert(links);
 
     if (linkError) {
-        throw new Error(linkError.message);
+        throw linkError;
     }
 
     return upsertedTags;

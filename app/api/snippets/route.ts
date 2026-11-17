@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { authGuard } from "@/middleware/auth-guard";
 import { generateUniqueSlug } from "@/lib/slug";
 import { snippetListQuerySchema, snippetSchema } from "@/lib/validations";
-import { errorResponse, okResponse } from "@/lib/api-response";
+import { errorResponse, mapDatabaseErrorMessage, okResponse } from "@/lib/api-response";
 import { getSnippetIdsByTagSlug, getTagsBySnippetIds, syncSnippetTags } from "@/lib/snippet-tags";
 
 export async function GET(request: NextRequest) {
@@ -78,8 +78,8 @@ export async function GET(request: NextRequest) {
         .range(from, to);
 
     if (error) {
-        console.error("Fetch user snippets failed:", error);
-        return errorResponse("Failed to fetch snippets", 500);
+        console.error("[GET /api/snippets] Fetch user snippets failed:", error);
+        return errorResponse(mapDatabaseErrorMessage(error, "Failed to fetch snippets"), 500);
     }
 
     const snippets = data ?? [];
@@ -127,6 +127,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { title, description, code, language, is_public, tags } = validation.data;
+    let createdSnippetId: string | null = null;
 
     try {
         const slug = is_public ? await generateUniqueSlug(title) : null;
@@ -146,11 +147,18 @@ export async function POST(request: NextRequest) {
             .single();
 
         if (error || !data) {
-            console.error("Create snippet failed:", error);
-            return errorResponse("Failed to create snippet", 500);
+            console.error("[POST /api/snippets] Insert snippet failed:", error);
+            return errorResponse(
+                mapDatabaseErrorMessage(error, "Failed to create snippet"),
+                500
+            );
         }
 
-        const syncedTags = tags ? await syncSnippetTags(data.id, tags) : [];
+        createdSnippetId = data.id;
+        const syncedTags =
+            tags && tags.length > 0
+                ? await syncSnippetTags(data.id, tags, { skipDelete: true })
+                : [];
 
         return okResponse(
             {
@@ -165,7 +173,13 @@ export async function POST(request: NextRequest) {
             }
         );
     } catch (error) {
-        console.error("Create snippet error:", error);
-        return errorResponse("Failed to create snippet", 500);
+        if (createdSnippetId) {
+            await supabase.from("snippets").delete().eq("id", createdSnippetId);
+        }
+        console.error("[POST /api/snippets] Unexpected error:", error);
+        return errorResponse(
+            mapDatabaseErrorMessage(error, "Failed to create snippet"),
+            500
+        );
     }
 }

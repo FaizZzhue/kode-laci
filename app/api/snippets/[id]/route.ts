@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { authGuard } from "@/middleware/auth-guard";
 import { generateUniqueSlug } from "@/lib/slug";
 import { snippetSchema, uuidSchema } from "@/lib/validations";
-import { errorResponse, okResponse } from "@/lib/api-response";
+import { errorResponse, mapDatabaseErrorMessage, okResponse } from "@/lib/api-response";
 import { getTagsBySnippetIds, syncSnippetTags } from "@/lib/snippet-tags";
 
 interface RouteParams {
@@ -135,8 +135,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             { message: "Snippet updated successfully" }
         );
     } catch (error) {
-        console.error("Update snippet error:", error);
-        return errorResponse("Failed to update snippet", 500);
+        console.error("[PUT /api/snippets/[id]] Update snippet error:", error);
+        return errorResponse(mapDatabaseErrorMessage(error, "Failed to update snippet"), 500);
     }
 }
 

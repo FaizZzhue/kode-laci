@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { errorResponse, okResponse } from "@/lib/api-response";
+import { errorResponse, mapDatabaseErrorMessage, okResponse } from "@/lib/api-response";
 
 describe("api-response helpers", () => {
     it("formats success responses consistently", async () => {
@@ -34,5 +34,17 @@ describe("api-response helpers", () => {
             error: "Validation failed",
             errors: { email: ["Invalid email"] },
         });
+    });
+
+    it("maps known Postgres/PostgREST codes without leaking raw DB details", () => {
+        assert.match(
+            mapDatabaseErrorMessage({ code: "42P01" }, "Fallback"),
+            /database\/schema\.sql/
+        );
+        assert.match(
+            mapDatabaseErrorMessage({ code: "42501" }, "Fallback"),
+            /SUPABASE_SERVICE_KEY/
+        );
+        assert.equal(mapDatabaseErrorMessage({ code: "99999" }, "Fallback"), "Fallback");
     });
 });
