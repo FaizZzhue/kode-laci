@@ -1,21 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { RATE_LIMIT_MAX_STORE_SIZE } from "@/constants/limits";
 import { errorResponse } from "@/lib/api-response";
-
-type RateLimitEntry = {
-    count: number;
-    resetAt: number;
-};
-
-type RateLimitConfig = {
-    limit: number;
-    windowMs: number;
-};
+import type { RateLimitConfig, RateLimitEntry } from "@/types";
 
 const store = new Map<string, RateLimitEntry>();
-const MAX_STORE_SIZE = 5000;
 
 function cleanupExpired(now: number) {
-    if (store.size < MAX_STORE_SIZE) {
+    if (store.size < RATE_LIMIT_MAX_STORE_SIZE) {
         return;
     }
 

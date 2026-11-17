@@ -4,13 +4,15 @@ import { supabase } from "@/lib/supabase";
 import { registerSchema } from "@/lib/validations";
 import { getAuthCookieOptions, signToken } from "@/lib/auth";
 import { errorResponse, okResponse } from "@/lib/api-response";
+import { RATE_LIMIT_POLICIES } from "@/constants/limits";
 import { enforceRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
-    const rateLimited = enforceRateLimit(request, "auth:register", {
-        limit: 5,
-        windowMs: 15 * 60 * 1000,
-    });
+    const rateLimited = enforceRateLimit(
+        request,
+        "auth:register",
+        RATE_LIMIT_POLICIES.AUTH_REGISTER
+    );
     if (rateLimited) {
         return rateLimited;
     }

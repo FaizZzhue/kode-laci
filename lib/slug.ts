@@ -1,8 +1,7 @@
 import { nanoid } from "nanoid";
+import { MAX_SLUG_ATTEMPTS } from "@/constants/limits";
 import { supabase } from "@/lib/supabase";
 import { slugify } from "@/lib/utils";
-
-const MAX_SLUG_ATTEMPTS = 5;
 
 export async function generateUniqueSlug(title: string): Promise<string> {
     const baseSlug = slugify(title);

@@ -1,6 +1,5 @@
+import { MAX_SEARCH_TOKENS } from "@/constants/limits";
 import { supabase } from "@/lib/supabase";
-
-const MAX_TOKENS = 8;
 
 export function extractSearchTokens(rawQuery: string): string[] {
     const tokens = rawQuery
@@ -9,7 +8,7 @@ export function extractSearchTokens(rawQuery: string): string[] {
         .split(/[^a-z0-9_]+/)
         .filter(Boolean);
 
-    return Array.from(new Set(tokens)).slice(0, MAX_TOKENS);
+    return Array.from(new Set(tokens)).slice(0, MAX_SEARCH_TOKENS);
 }
 
 export function buildPrefixTsQuery(tokens: string[]): string | null {

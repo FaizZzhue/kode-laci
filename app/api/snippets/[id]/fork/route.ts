@@ -2,17 +2,13 @@ import { NextRequest } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { authGuard } from "@/middleware/auth-guard";
 import { uuidSchema } from "@/lib/validations";
+import { RATE_LIMIT_POLICIES } from "@/constants/limits";
 import { errorResponse, okResponse } from "@/lib/api-response";
 import { getTagsBySnippetIds, syncSnippetTags } from "@/lib/snippet-tags";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import type { RouteIdParams } from "@/types";
 
-interface RouteParams {
-    params: Promise<{
-        id: string;
-    }>;
-}
-
-export async function POST(request: NextRequest, { params }: RouteParams) {
+export async function POST(request: NextRequest, { params }: RouteIdParams) {
     const payload = authGuard(request);
     if (!payload) {
         return errorResponse("Unauthorized", 401);
@@ -21,7 +17,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const rateLimited = enforceRateLimit(
         request,
         "snippets:fork",
-        { limit: 20, windowMs: 60 * 1000 },
+        RATE_LIMIT_POLICIES.SNIPPET_FORK,
         payload.id
     );
     if (rateLimited) {

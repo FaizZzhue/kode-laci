@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import type { PaginationMeta } from "@/types";
+import type { PaginationMeta, PostgrestLikeError } from "@/types";
 
 export function okResponse<T>(
     data: T,
@@ -35,11 +35,6 @@ export function errorResponse(
         { status }
     );
 }
-
-type PostgrestLikeError = {
-    code?: string;
-    message?: string;
-};
 
 export function mapDatabaseErrorMessage(error: unknown, fallback: string): string {
     const err = error as PostgrestLikeError | null | undefined;

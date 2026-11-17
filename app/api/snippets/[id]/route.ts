@@ -5,14 +5,9 @@ import { generateUniqueSlug } from "@/lib/slug";
 import { snippetSchema, uuidSchema } from "@/lib/validations";
 import { errorResponse, mapDatabaseErrorMessage, okResponse } from "@/lib/api-response";
 import { getTagsBySnippetIds, syncSnippetTags } from "@/lib/snippet-tags";
+import type { RouteIdParams } from "@/types";
 
-interface RouteParams {
-    params: Promise<{
-        id: string;
-    }>;
-}
-
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(request: NextRequest, { params }: RouteIdParams) {
     const payload = authGuard(request);
     if (!payload) {
         return errorResponse("Unauthorized", 401);
@@ -49,7 +44,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     });
 }
 
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+export async function PUT(request: NextRequest, { params }: RouteIdParams) {
     const payload = authGuard(request);
     if (!payload) {
         return errorResponse("Unauthorized", 401);
@@ -140,7 +135,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 }
 
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(request: NextRequest, { params }: RouteIdParams) {
     const payload = authGuard(request);
     if (!payload) {
         return errorResponse("Unauthorized", 401);

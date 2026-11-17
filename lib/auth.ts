@@ -1,8 +1,8 @@
 import jwt, { type SignOptions } from "jsonwebtoken";
+import { AUTH_COOKIE_MAX_AGE, AUTH_COOKIE_NAME } from "@/constants/auth";
 import type { AuthPayload } from "@/types";
 
-export const AUTH_COOKIE_NAME = "kodelaci_token";
-export const AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
+export { AUTH_COOKIE_NAME, AUTH_COOKIE_MAX_AGE };
 
 export function getAuthCookieOptions(maxAge = AUTH_COOKIE_MAX_AGE) {
     return {

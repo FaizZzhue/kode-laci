@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
-import { AUTH_COOKIE_NAME, verifyToken } from "@/lib/auth";
+import { AUTH_COOKIE_NAME } from "@/constants/auth";
+import { verifyToken } from "@/lib/auth";
 import type { AuthPayload } from "@/types";
 
 export function authGuard(request: NextRequest): AuthPayload | null {

@@ -1,12 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { getTagsBySnippetIds } from "@/lib/snippet-tags";
-import type { PublicAuthor, Snippet } from "@/types";
-
-export type PublicSnippetDetail = Snippet & {
-    code: string;
-    fork_count: number;
-    author: PublicAuthor | null;
-};
+import type { PublicSnippetDetail } from "@/types";
 
 export async function getPublicSnippetBySlug(slug: string): Promise<PublicSnippetDetail | null> {
     const trimmed = slug.trim();

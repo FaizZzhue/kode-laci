@@ -1,11 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { slugify } from "@/lib/utils";
-import type { Tag } from "@/types";
-
-type SnippetTagRow = {
-    snippet_id: string;
-    tag: Tag | Tag[] | null;
-};
+import type { SnippetTagRow, Tag } from "@/types";
 
 export function normalizeTagInputs(tags: string[] = []): Array<{ name: string; slug: string }> {
     const seen = new Set<string>();

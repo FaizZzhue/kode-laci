@@ -1,19 +1,16 @@
 import { NextRequest } from "next/server";
+import { RATE_LIMIT_POLICIES } from "@/constants/limits";
 import { errorResponse, okResponse } from "@/lib/api-response";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { getPublicSnippetBySlug } from "@/lib/public-snippets";
+import type { RouteSlugParams } from "@/types";
 
-interface RouteParams {
-    params: Promise<{
-        slug: string;
-    }>;
-}
-
-export async function GET(request: NextRequest, { params }: RouteParams) {
-    const rateLimited = enforceRateLimit(request, "public:snippet-detail", {
-        limit: 60,
-        windowMs: 60 * 1000,
-    });
+export async function GET(request: NextRequest, { params }: RouteSlugParams) {
+    const rateLimited = enforceRateLimit(
+        request,
+        "public:snippet-detail",
+        RATE_LIMIT_POLICIES.PUBLIC_SNIPPET_DETAIL
+    );
     if (rateLimited) {
         return rateLimited;
     }

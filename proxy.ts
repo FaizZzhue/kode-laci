@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-
-const PROTECTED_PREFIXES = ["/dashboard", "/snippets"];
-const AUTH_PAGES = ["/login", "/register"];
+import { AUTH_COOKIE_NAME, AUTH_PAGES, PROTECTED_PREFIXES } from "@/constants/auth";
 
 function applySecurityHeaders(response: NextResponse): NextResponse {
     response.headers.set("X-Content-Type-Options", "nosniff");
@@ -13,7 +11,7 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
 
 export function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
-    const hasSessionCookie = request.cookies.has("kodelaci_token");
+    const hasSessionCookie = request.cookies.has(AUTH_COOKIE_NAME);
 
     const isProtectedPage = PROTECTED_PREFIXES.some(
         (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
@@ -24,7 +22,7 @@ export function proxy(request: NextRequest) {
         return applySecurityHeaders(NextResponse.redirect(loginUrl));
     }
 
-    const isAuthPage = AUTH_PAGES.includes(pathname);
+    const isAuthPage = (AUTH_PAGES as readonly string[]).includes(pathname);
     if (isAuthPage && hasSessionCookie) {
         return applySecurityHeaders(NextResponse.redirect(new URL("/dashboard", request.url)));
     }

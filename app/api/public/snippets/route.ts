@@ -4,13 +4,15 @@ import { snippetListQuerySchema } from "@/lib/validations";
 import { errorResponse, okResponse } from "@/lib/api-response";
 import { getSnippetIdsByTagSlug, getTagsBySnippetIds } from "@/lib/snippet-tags";
 import { resolveSnippetSearchFilter } from "@/lib/snippet-search";
+import { RATE_LIMIT_POLICIES } from "@/constants/limits";
 import { enforceRateLimit } from "@/lib/rate-limit";
 
 export async function GET(request: NextRequest) {
-    const rateLimited = enforceRateLimit(request, "public:snippets", {
-        limit: 60,
-        windowMs: 60 * 1000,
-    });
+    const rateLimited = enforceRateLimit(
+        request,
+        "public:snippets",
+        RATE_LIMIT_POLICIES.PUBLIC_SNIPPETS
+    );
     if (rateLimited) {
         return rateLimited;
     }
